@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Scene — what's the scene tonight?</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #06060C;
+  --o: #FFA050;
+  --p: #AF8CFF;
+  --r: #FF3B30;
+  --g: #30D158;
+  --go: #FFD60A;
+  --ink: #FFFFFF;
+  --ink-soft: rgba(255,255,255,.78);
+  --ink-mute: rgba(255,255,255,.42);
+  --sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+html { scroll-behavior: smooth; }
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+::selection { background: var(--o); color: #000; }
+
+.deck {
+scroll-snap-type: y mandatory;
+overflow-y: scroll;
+height: 100vh;
+scrollbar-width: none;
+}
+.deck::-webkit-scrollbar { display: none; }
+section.slide {
+scroll-snap-align: start;
+scroll-snap-stop: always;
+height: 100vh;
+width: 100vw;
+position: relative;
+overflow: hidden;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: clamp(40px, 6vh, 80px) clamp(24px, 6vw, 96px);
+}
+.slide-inner { width: 100%; max-width: 1200px; position: relative; z-index: 2; }
+
+.orb {
+position: absolute;
+border-radius: 50%;
+filter: blur(88px);
+pointer-events: none;
+animation: float 9s ease-in-out infinite;
+z-index: 0;
+}
+@keyframes float {
+0%, 100% { transform: translateY(0); }
+50%      { transform: translateY(-18px); }
+}
+.dotgrid {
+position: absolute;
+inset: 0;
+background-image: radial-gradient(rgba(175,140,255,.18) 1px, transparent 1px);
+background-size: 36px 36px;
+-webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+pointer-events: none;
+opacity: 0.5;
+}
+
+.scene-wordmark {
+font-family: var(--sans);
+font-weight: 700;
+letter-spacing: -0.035em;
+background: linear-gradient(90deg, #fff 0%, var(--p) 40%, var(--o) 70%, #fff 100%);
+background-size: 300% 100%;
+-webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
+color: transparent;
+animation: gradient-shift 4s ease infinite;
+display: inline-block;
+filter: drop-shadow(0 0 28px rgba(175,140,255,.4)) drop-shadow(0 0 52px rgba(255,160,80,.25));
+}
+@keyframes gradient-shift {
+0%, 100% { background-position: 0% 50%; }
+50%      { background-position: 100% 50%; }
+}
+.scene-glow-wrap { position: relative; display: inline-block; }
+.scene-glow-wrap::before {
+content: '';
+position: absolute;
+inset: -40px -30px;
+background: radial-gradient(ellipse at center, rgba(175,140,255,.35), transparent 70%);
+filter: blur(40px);
+z-index: -1;
+animation: pulse-glow 4s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+0%, 100% { opacity: 0.5; transform: scale(0.95); }
+50%      { opacity: 0.8; transform: scale(1.05); }
+}
+
+.brand-mini {
+position: fixed;
+top: 24px;
+left: 28px;
+z-index: 100;
+font-family: var(--sans);
+font-weight: 700;
+font-size: 22px;
+letter-spacing: -0.03em;
+background: linear-gradient(90deg, #fff 0%, var(--p) 40%, var(--o) 70%, #fff 100%);
+background-size: 300% 100%;
+-webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
+animation: gradient-shift 4s ease infinite;
+filter: drop-shadow(0 0 8px rgba(175,140,255,.4));
+}
+.side-nav {
+position: fixed;
+right: 24px;
+top: 50%;
+transform: translateY(-50%);
+z-index: 100;
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.side-nav button {
+width: 8px; height: 8px;
+border-radius: 50%;
+background: rgba(255,255,255,.22);
+border: none;
+cursor: pointer;
+padding: 0;
+position: relative;
+transition: all 0.3s ease;
+}
+.side-nav button:hover { background: rgba(255,255,255,.5); transform: scale(1.4); }
+.side-nav button.active {
+background: linear-gradient(45deg, var(--o), var(--p));
+width: 8px; height: 24px;
+border-radius: 4px;
+box-shadow: 0 0 12px rgba(175,140,255,.6);
+}
+.side-nav button .label {
+position: absolute;
+right: 18px; top: 50%;
+transform: translateY(-50%);
+background: rgba(255,255,255,.07);
+border: 1px solid rgba(255,255,255,.13);
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+color: var(--ink-soft);
+padding: 5px 11px;
+border-radius: 6px;
+font-size: 10px;
+font-weight: 600;
+white-space: nowrap;
+opacity: 0;
+pointer-events: none;
+transition: opacity 0.2s;
+letter-spacing: 0.05em;
+text-transform: uppercase;
+}
+.side-nav button:hover .label { opacity: 1; }
+.progress-bar {
+position: fixed;
+bottom: 0; left: 0;
+height: 3px; width: 100%;
+background: rgba(255,255,255,.05);
+z-index: 100;
+}
+.progress-bar .fill {
+height: 100%; width: 0%;
+background: linear-gradient(90deg, var(--o), var(--p));
+transition: width 0.3s ease;
+box-shadow: 0 0 10px rgba(175,140,255,.5);
+}
+.scroll-hint {
+position: absolute;
+bottom: 32px; left: 50%;
+transform: translateX(-50%);
+color: rgba(255,255,255,.28);
+font-size: 11px;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+font-weight: 600;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 8px;
+animation: bob 2s ease-in-out infinite;
+z-index: 3;
+}
+@keyframes bob {
+0%, 100% { transform: translate(-50%, 0); opacity: 0.6; }
+50%      { transform: translate(-50%, 6px); opacity: 1; }
+}
+.scroll-hint .arrow {
+width: 12px; height: 12px;
+border-right: 2px solid rgba(255,255,255,.28);
+border-bottom: 2px solid rgba(255,255,255,.28);
+transform: rotate(45deg);
+}
+
+.eyebrow {
+font-size: 11px;
+font-weight: 700;
+letter-spacing: 0.32em;
+text-transform: uppercase;
+color: var(--o);
+margin-bottom: 18px;
+display: inline-block;
+}
+h1.title {
+font-family: var(--sans);
+font-size: clamp(32px, 4.5vw, 56px);
+font-weight: 700;
+line-height: 1.05;
+letter-spacing: -0.025em;
+margin-bottom: 18px;
+}
+h1.title em {
+font-style: normal;
+background: linear-gradient(90deg, var(--o), var(--p));
+-webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
+}
+.lede {
+font-size: clamp(15px, 1.2vw, 18px);
+color: var(--ink-soft);
+line-height: 1.6;
+max-width: 720px;
+}
+
+.reveal { opacity: 0; transform: translateY(30px); transition: opacity .8s ease, transform .8s cubic-bezier(.16,1,.3,1); }
+.reveal.in { opacity: 1; transform: translateY(0); }
+.reveal-d1 { transition-delay: .1s; }
+.reveal-d2 { transition-delay: .2s; }
+.reveal-d3 { transition-delay: .3s; }
+.reveal-d4 { transition-delay: .4s; }
+.reveal-d5 { transition-delay: .5s; }
+.reveal-d6 { transition-delay: .6s; }
+.reveal-d7 { transition-delay: .7s; }
+.scale-in { opacity: 0; transform: scale(.9); transition: opacity .9s ease, transform .9s cubic-bezier(.16,1,.3,1); }
+.scale-in.in { opacity: 1; transform: scale(1); }
+
+.hero { text-align: center; }
+.hero .scene-wordmark {
+font-size: clamp(80px, 16vw, 220px);
+display: block;
+line-height: 1;
+}
+.hero .tagline {
+font-size: clamp(20px, 2.6vw, 34px);
+color: var(--ink);
+margin-top: 36px;
+font-weight: 400;
+letter-spacing: -0.01em;
+}
+.hero .tagline .quote { color: var(--ink-mute); }
+.hero .meta {
+margin-top: 48px;
+font-size: 12px;
+letter-spacing: 0.25em;
+text-transform: uppercase;
+color: var(--ink-mute);
+font-weight: 600;
+}
+.hero .meta span { color: var(--o); }
+
+.chat-grid {
+display: grid;
+grid-template-columns: 1fr 380px;
+gap: 60px;
+align-items: center;
+width: 100%;
+max-width: 1100px;
+}
+@media (max-width: 900px) {
+.chat-grid { grid-template-columns: 1fr; gap: 30px; max-width: 380px; }
+.chat-side { order: -1; text-align: center; }
+}
+.chat-side .eyebrow { color: var(--p); }
+.chat-side h2 {
+font-size: clamp(32px, 4vw, 52px);
+font-weight: 700;
+line-height: 1.05;
+letter-spacing: -0.025em;
+margin-bottom: 20px;
+}
+.chat-side h2 em {
+font-style: normal;
+background: linear-gradient(90deg, var(--o), var(--go));
+-webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
+}
+.chat-side p {
+font-size: 17px;
+color: var(--ink-soft);
+line-height: 1.6;
+max-width: 460px;
+}
+@media (max-width: 900px) { .chat-side p { margin: 0 auto; } }
+
+.phone {
+width: 360px;
+height: 720px;
+max-height: 80vh;
+background: linear-gradient(180deg, #0E0A1A, #1A1228);
+border-radius: 44px;
+border: 2px solid rgba(255,255,255,.08);
+box-shadow:
+0 0 0 12px #06060C,
+0 0 0 14px rgba(175,140,255,.3),
+0 30px 80px rgba(175,140,255,.25),
+0 0 80px rgba(255,160,80,.2);
+padding: 14px;
+position: relative;
+overflow: hidden;
+margin: 0 auto;
+}
+.phone::before {
+content: '';
+position: absolute;
+top: 14px; left: 50%;
+transform: translateX(-50%);
+width: 100px;
+height: 28px;
+background: #06060C;
+border-radius: 0 0 18px 18px;
+z-index: 10;
+}
+.phone-screen {
+width: 100%;
+height: 100%;
+background: #06060C;
+border-radius: 32px;
+display: flex;
+flex-direction: column;
+overflow: hidden;
+position: relative;
+}
+.phone-header {
+background: rgba(14,10,26,.95);
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(20px);
+padding: 50px 18px 12px;
+border-bottom: 1px solid rgba(255,255,255,.05);
+text-align: center;
+position: relative;
+z-index: 5;
+}
+.phone-header .group-avatar {
+display: inline-flex;
+width: 36px; height: 36px;
+border-radius: 50%;
+background: linear-gradient(135deg, var(--o), var(--p));
+align-items: center;
+justify-content: center;
+font-size: 16px;
+margin-bottom: 4px;
+}
+.phone-header .group-name {
+font-weight: 700;
+font-size: 14px;
+color: var(--ink);
+letter-spacing: -0.01em;
+}
+.phone-header .group-meta {
+font-size: 10px;
+color: var(--ink-mute);
+margin-top: 2px;
+}
+.chat-feed {
+flex: 1;
+padding: 14px 12px;
+overflow-y: auto;
+display: flex;
+flex-direction: column;
+gap: 6px;
+scrollbar-width: none;
+}
+.chat-feed::-webkit-scrollbar { display: none; }
+.bubble {
+max-width: 78%;
+padding: 9px 13px;
+border-radius: 18px;
+font-size: 13.5px;
+line-height: 1.35;
+word-wrap: break-word;
+opacity: 0;
+transform: translateY(8px) scale(.95);
+animation: bubble-in .4s cubic-bezier(.16,1,.3,1) forwards;
+position: relative;
+}
+@keyframes bubble-in {
+to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.bubble.left {
+background: rgba(255,255,255,.09);
+border: 1px solid rgba(255,255,255,.15);
+color: var(--ink);
+align-self: flex-start;
+border-bottom-left-radius: 4px;
+}
+.bubble.right {
+background: rgba(255,160,80,.18);
+border: 1px solid rgba(255,160,80,.35);
+color: var(--ink);
+align-self: flex-end;
+border-bottom-right-radius: 4px;
+}
+.bubble .sender {
+display: block;
+font-size: 10px;
+font-weight: 700;
+color: var(--p);
+margin-bottom: 2px;
+letter-spacing: 0.02em;
+}
+.bubble.right .sender { color: var(--o); }
+.bubble.same-sender { margin-top: -3px; }
+.bubble.same-sender .sender { display: none; }
+.typing {
+background: rgba(255,255,255,.09);
+border: 1px solid rgba(255,255,255,.15);
+align-self: flex-start;
+padding: 12px 16px;
+border-radius: 18px;
+border-bottom-left-radius: 4px;
+display: inline-flex;
+gap: 4px;
+align-items: center;
+opacity: 0;
+animation: bubble-in .3s ease forwards;
+}
+.typing .dot {
+width: 6px; height: 6px;
+border-radius: 50%;
+background: rgba(255,255,255,.42);
+animation: typing-bounce 1.2s ease-in-out infinite;
+}
+.typing .dot:nth-child(2) { animation-delay: .15s; }
+.typing .dot:nth-child(3) { animation-delay: .3s; }
+@keyframes typing-bounce {
+0%, 60%, 100% { transform: translateY(0); opacity: .4; }
+30%           { transform: translateY(-4px); opacity: 1; }
+}
+.chat-reveal {
+position: absolute;
+inset: 0;
+background: radial-gradient(ellipse at center, rgba(6,6,12,.95), rgba(6,6,12,.99));
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+opacity: 0;
+transform: scale(.95);
+transition: opacity .8s ease, transform .8s cubic-bezier(.16,1,.3,1);
+pointer-events: none;
+border-radius: 32px;
+padding: 20px;
+z-index: 6;
+}
+.chat-reveal.show { opacity: 1; transform: scale(1); }
+.chat-reveal .scene-wordmark { font-size: 56px; }
+.chat-reveal .reveal-tag {
+font-size: 14px;
+color: var(--ink-soft);
+margin-top: 16px;
+text-align: center;
+font-style: italic;
+}
+.replay-btn {
+margin-top: 20px;
+background: rgba(255,255,255,.05);
+color: var(--ink-mute);
+border: 1px solid rgba(255,255,255,.13);
+padding: 9px 18px;
+border-radius: 100px;
+font-size: 11px;
+font-weight: 600;
+cursor: pointer;
+letter-spacing: 0.1em;
+text-transform: uppercase;
+transition: all .2s;
+font-family: var(--sans);
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+}
+.replay-btn:hover {
+background: rgba(255,160,80,.15);
+color: white;
+border-color: var(--o);
+}
+@media (max-width: 900px) { .replay-btn { display: block; margin: 16px auto 0; } }
+
+.stat-grid {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 24px;
+margin-top: 50px;
+}
+@media (max-width: 800px) { .stat-grid { grid-template-columns: 1fr; } }
+.stat-card {
+background: rgba(255,255,255,.05);
+backdrop-filter: blur(22px);
+-webkit-backdrop-filter: blur(22px);
+border: 1px solid rgba(255,255,255,.12);
+border-radius: 22px;
+padding: 32px 28px;
+position: relative;
+overflow: hidden;
+transition: transform .4s ease, border-color .4s ease;
+}
+.stat-card::after {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 60%);
+pointer-events: none;
+border-radius: 22px;
+}
+.stat-card:hover {
+transform: translateY(-6px);
+border-color: rgba(255,160,80,.5);
+}
+.stat-card::before {
+content: '';
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 3px;
+background: var(--accent, var(--o));
+z-index: 1;
+}
+.stat-card > * { position: relative; z-index: 1; }
+.stat-card .number {
+font-size: clamp(36px, 4vw, 52px);
+font-weight: 700;
+line-height: 1;
+letter-spacing: -0.03em;
+margin-bottom: 12px;
+background: linear-gradient(180deg, white, rgba(255,255,255,.7));
+-webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
+}
+.stat-card .label {
+font-size: 13px;
+color: var(--ink-soft);
+line-height: 1.5;
+margin-bottom: 16px;
+}
+.stat-card .delta {
+font-size: 11px;
+font-weight: 700;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+color: var(--accent, var(--o));
+}
+
+.problem-rows {
+margin-top: 40px;
+display: flex;
+flex-direction: column;
+gap: 14px;
+max-width: 800px;
+}
+.problem-row {
+display: flex;
+align-items: baseline;
+gap: 16px;
+padding: 18px 24px;
+background: rgba(255,255,255,.04);
+border: 1px solid rgba(255,255,255,.08);
+border-left: 3px solid var(--o);
+border-radius: 0 14px 14px 0;
+font-size: 16px;
+transition: transform .3s, background .3s;
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+}
+.problem-row:hover { transform: translateX(8px); background: rgba(255,255,255,.07); }
+.problem-row b { color: var(--ink); font-weight: 700; }
+.problem-row span { color: var(--ink-mute); font-style: italic; }
+
+.validation-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 60px;
+align-items: center;
+margin-top: 40px;
+}
+@media (max-width: 900px) { .validation-grid { grid-template-columns: 1fr; gap: 40px; } }
+.validation-text p {
+font-size: 16px;
+color: var(--ink-soft);
+line-height: 1.7;
+margin-bottom: 18px;
+}
+.validation-text p strong { color: var(--ink); font-weight: 700; }
+.timeline { display: flex; flex-direction: column; gap: 14px; }
+.tl-item {
+display: grid;
+grid-template-columns: 80px 1fr;
+gap: 16px;
+align-items: center;
+padding: 14px 18px;
+background: rgba(255,255,255,.04);
+border: 1px solid rgba(255,255,255,.08);
+border-left: 3px solid var(--accent, var(--o));
+border-radius: 0 12px 12px 0;
+transition: transform .3s;
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+}
+.tl-item:hover { transform: translateX(6px); }
+.tl-item .tl-date {
+font-size: 11px;
+font-weight: 800;
+letter-spacing: 0.1em;
+color: var(--accent, var(--o));
+}
+.tl-item .tl-text { font-size: 13px; color: var(--ink-soft); line-height: 1.4; }
+
+.matrix {
+margin-top: 40px;
+background: rgba(255,255,255,.05);
+backdrop-filter: blur(22px);
+-webkit-backdrop-filter: blur(22px);
+border: 1px solid rgba(255,255,255,.12);
+border-radius: 22px;
+padding: 28px;
+position: relative;
+overflow: hidden;
+}
+.matrix::before {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 60%);
+pointer-events: none;
+border-radius: 22px;
+}
+.matrix table { width: 100%; border-collapse: collapse; position: relative; z-index: 1; }
+.matrix th, .matrix td { padding: 14px 12px; text-align: center; font-size: 14px; }
+.matrix th:first-child, .matrix td:first-child { text-align: left; padding-left: 16px; }
+.matrix th {
+font-size: 11px;
+font-weight: 700;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+color: var(--ink-mute);
+border-bottom: 1px solid rgba(255,255,255,.1);
+padding-bottom: 18px;
+}
+.matrix th.col-zomato { color: var(--o); }
+.matrix th.col-swiggy { color: var(--p); }
+.matrix th.col-scene  { color: var(--go); }
+.matrix tbody tr { border-bottom: 1px solid rgba(255,255,255,.05); transition: background .2s; }
+.matrix tbody tr:hover { background: rgba(255,255,255,.03); }
+.matrix tbody tr:last-child { border-bottom: none; }
+.matrix td { color: var(--ink-soft); font-size: 13px; }
+.matrix .check, .matrix .cross {
+display: inline-flex;
+width: 24px; height: 24px;
+border-radius: 50%;
+align-items: center;
+justify-content: center;
+font-size: 12px;
+font-weight: 800;
+}
+.matrix .check { background: rgba(48,209,88,.15); color: var(--g); }
+.matrix .cross { background: rgba(255,59,48,.15); color: var(--r); }
+.matrix-takeaway {
+margin-top: 28px;
+text-align: center;
+font-size: 14px;
+font-style: italic;
+color: var(--go);
+font-weight: 500;
+position: relative;
+z-index: 1;
+}
+
+.pillars {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 24px;
+margin-top: 50px;
+}
+@media (max-width: 800px) { .pillars { grid-template-columns: 1fr; } }
+.pillar {
+background: rgba(255,255,255,.05);
+backdrop-filter: blur(22px);
+-webkit-backdrop-filter: blur(22px);
+border: 1px solid rgba(255,255,255,.12);
+border-radius: 22px;
+padding: 32px 28px;
+transition: all .4s ease;
+position: relative;
+overflow: hidden;
+}
+.pillar::after {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 60%);
+pointer-events: none;
+border-radius: 22px;
+}
+.pillar:hover {
+transform: translateY(-8px);
+border-color: var(--accent);
+box-shadow: 0 20px 60px rgba(0,0,0,.3), 0 0 40px var(--accent-glow, rgba(255,160,80,.2));
+}
+.pillar > * { position: relative; z-index: 1; }
+.pillar .icon {
+width: 56px; height: 56px;
+border-radius: 14px;
+background: rgba(255,255,255,.04);
+border: 1px solid var(--accent);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 28px;
+margin-bottom: 22px;
+}
+.pillar h3 {
+font-size: 22px;
+font-weight: 700;
+color: var(--ink);
+margin-bottom: 12px;
+letter-spacing: -0.015em;
+}
+.pillar p { font-size: 14px; color: var(--ink-soft); line-height: 1.6; }
+
+.steps {
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: 18px;
+margin-top: 48px;
+}
+@media (max-width: 800px) { .steps { grid-template-columns: 1fr 1fr; gap: 12px; } }
+.step {
+background: rgba(255,255,255,.05);
+backdrop-filter: blur(22px);
+-webkit-backdrop-filter: blur(22px);
+border: 1px solid rgba(255,255,255,.12);
+border-radius: 16px;
+padding: 22px 18px;
+position: relative;
+text-align: center;
+transition: transform .3s, border-color .3s;
+overflow: hidden;
+}
+.step::after {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 60%);
+pointer-events: none;
+border-radius: 16px;
+}
+.step > * { position: relative; z-index: 1; }
+.step:hover { transform: translateY(-4px); border-color: var(--accent, var(--o)); }
+.step .step-num {
+width: 32px; height: 32px;
+border-radius: 50%;
+background: var(--accent, var(--o));
+color: #000;
+display: flex;
+align-items: center;
+justify-content: center;
+font-weight: 700;
+font-size: 14px;
+margin: 0 auto 14px;
+box-shadow: 0 0 20px var(--accent, var(--o));
+}
+.step h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+.step p { font-size: 12px; color: var(--ink-mute); line-height: 1.5; }
+
+.quadrants {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 20px;
+margin-top: 40px;
+}
+@media (max-width: 800px) { .quadrants { grid-template-columns: 1fr; } }
+.quad {
+background: rgba(255,255,255,.05);
+backdrop-filter: blur(22px);
+-webkit-backdrop-filter: blur(22px);
+border: 1px solid rgba(255,255,255,.12);
+border-radius: 16px;
+padding: 26px 28px;
+border-left: 4px solid var(--accent);
+transition: transform .3s, background .3s;
+position: relative;
+overflow: hidden;
+}
+.quad::after {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 60%);
+pointer-events: none;
+}
+.quad > * { position: relative; z-index: 1; }
+.quad:hover { transform: translateX(6px); background: rgba(255,255,255,.08); }
+.quad h4 {
+font-size: 18px;
+font-weight: 700;
+color: var(--accent);
+margin-bottom: 10px;
+letter-spacing: -0.01em;
+}
+.quad p { font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; }
+
+.beachhead {
+display: grid;
+grid-template-columns: 1.4fr 1fr;
+gap: 50px;
+margin-top: 40px;
+align-items: center;
+}
+@media (max-width: 900px) { .beachhead { grid-template-columns: 1fr; gap: 30px; } }
+.bh-list { display: flex; flex-direction: column; gap: 14px; }
+.bh-row {
+background: rgba(255,255,255,.04);
+border: 1px solid rgba(255,255,255,.08);
+border-left: 3px solid var(--o);
+border-radius: 0 12px 12px 0;
+padding: 16px 22px;
+backdrop-filter: blur(10px);
+-webkit-backdrop-filter: blur(10px);
+}
+.bh-row h5 {
+font-size: 11px;
+font-weight: 700;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+color: var(--p);
+margin-bottom: 6px;
+}
+.bh-row p { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+.bh-stat {
+background: rgba(175,140,255,.08);
+border: 1.5px solid rgba(175,140,255,.4);
+border-radius: 22px;
+padding: 36px 28px;
+text-align: center;
+margin-bottom: 18px;
+transition: transform .4s;
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(20px);
+position: relative;
+overflow: hidden;
+}
+.bh-stat::after {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 60%);
+pointer-events: none;
+}
+.bh-stat > * { position: relative; z-index: 1; }
+.bh-stat:hover { transform: scale(1.04); }
+.bh-stat .num {
+font-size: 64px;
+font-weight: 700;
+line-height: 1;
+letter-spacing: -0.04em;
+background: linear-gradient(180deg, var(--p), var(--o));
+-webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
+margin-bottom: 8px;
+}
+.bh-stat .lbl { font-size: 12px; color: var(--ink-soft); line-height: 1.4; }
+.bh-stat.alt { border-color: rgba(255,160,80,.4); background: rgba(255,160,80,.08); }
+.bh-stat.alt .num {
+background: linear-gradient(180deg, var(--o), var(--go));
+-webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
+font-size: 38px;
+}
+
+.phases { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px; }
+@media (max-width: 800px) { .phases { grid-template-columns: 1fr; } }
+.phase {
+background: rgba(255,255,255,.05);
+backdrop-filter: blur(22px);
+-webkit-backdrop-filter: blur(22px);
+border: 1px solid rgba(255,255,255,.12);
+border-radius: 22px;
+padding: 28px 24px;
+position: relative;
+overflow: hidden;
+transition: transform .4s;
+}
+.phase::after {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 60%);
+pointer-events: none;
+}
+.phase > * { position: relative; z-index: 1; }
+.phase:hover { transform: translateY(-6px); }
+.phase::before {
+content: '';
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 4px;
+background: var(--accent);
+z-index: 2;
+}
+.phase .phase-tag {
+font-size: 10px;
+font-weight: 800;
+letter-spacing: 0.18em;
+text-transform: uppercase;
+color: var(--accent);
+margin-bottom: 12px;
+}
+.phase h3 {
+font-size: 22px;
+font-weight: 700;
+margin-bottom: 18px;
+letter-spacing: -0.015em;
+}
+.phase ul { list-style: none; }
+.phase ul li {
+font-size: 13px;
+color: var(--ink-soft);
+line-height: 1.5;
+padding: 8px 0;
+padding-left: 18px;
+position: relative;
+}
+.phase ul li::before {
+content: '';
+position: absolute;
+left: 0; top: 14px;
+width: 8px; height: 8px;
+border-radius: 50%;
+background: var(--accent);
+}
+
+.ask-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 32px;
+margin-top: 40px;
+}
+@media (max-width: 800px) { .ask-grid { grid-template-columns: 1fr; } }
+.ask-main {
+background: linear-gradient(160deg, rgba(255,160,80,.15), rgba(175,140,255,.08));
+backdrop-filter: blur(22px);
+-webkit-backdrop-filter: blur(22px);
+border: 1.5px solid rgba(255,160,80,.5);
+border-radius: 22px;
+padding: 40px 36px;
+position: relative;
+overflow: hidden;
+}
+.ask-main::before {
+content: '';
+position: absolute;
+top: -50%; left: -50%;
+width: 200%; height: 200%;
+background: conic-gradient(from 0deg, transparent, rgba(255,160,80,.12), transparent 30%);
+animation: rotate-glow 8s linear infinite;
+}
+@keyframes rotate-glow {
+to { transform: rotate(360deg); }
+}
+.ask-main > * { position: relative; z-index: 1; }
+.ask-eyebrow {
+font-size: 11px;
+font-weight: 800;
+letter-spacing: 0.25em;
+text-transform: uppercase;
+color: var(--o);
+margin-bottom: 14px;
+}
+.ask-amount {
+font-size: 72px;
+font-weight: 700;
+line-height: 1;
+letter-spacing: -0.04em;
+margin-bottom: 8px;
+display: flex;
+align-items: baseline;
+gap: 8px;
+}
+.ask-amount .currency { font-size: 38px; color: var(--ink-soft); }
+.ask-amount .placeholder {
+background: linear-gradient(90deg, var(--o), var(--p));
+-webkit-background-clip: text;
+background-clip: text;
+-webkit-text-fill-color: transparent;
+}
+.ask-amount .unit { font-size: 38px; color: var(--ink-soft); }
+.ask-meta {
+font-size: 12px;
+font-weight: 700;
+color: var(--p);
+letter-spacing: 0.18em;
+text-transform: uppercase;
+margin-bottom: 14px;
+}
+.ask-tbd-badge {
+display: inline-block;
+background: rgba(255,214,10,.15);
+color: var(--go);
+border: 1px solid rgba(255,214,10,.4);
+padding: 5px 12px;
+border-radius: 100px;
+font-size: 10px;
+font-weight: 700;
+letter-spacing: 0.18em;
+text-transform: uppercase;
+margin-bottom: 18px;
+}
+.ask-main .desc {
+font-size: 13.5px;
+color: var(--ink-soft);
+line-height: 1.6;
+font-style: italic;
+}
+.ask-uses {
+background: rgba(255,255,255,.05);
+backdrop-filter: blur(22px);
+-webkit-backdrop-filter: blur(22px);
+border: 1px solid rgba(255,255,255,.12);
+border-radius: 22px;
+padding: 32px 28px;
+position: relative;
+overflow: hidden;
+}
+.ask-uses::after {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 60%);
+pointer-events: none;
+}
+.ask-uses > * { position: relative; z-index: 1; }
+.ask-uses h4 {
+font-size: 11px;
+font-weight: 800;
+letter-spacing: 0.22em;
+text-transform: uppercase;
+color: var(--p);
+margin-bottom: 22px;
+}
+.use-row {
+display: grid;
+grid-template-columns: 56px 1fr;
+gap: 16px;
+align-items: center;
+padding: 12px 0;
+border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.use-row:last-child { border-bottom: none; }
+.use-row .pct {
+font-size: 26px;
+font-weight: 700;
+color: var(--o);
+letter-spacing: -0.02em;
+}
+.use-row .use-text h5 {
+font-size: 14px;
+font-weight: 700;
+color: var(--ink);
+margin-bottom: 2px;
+}
+.use-row .use-text p { font-size: 11.5px; color: var(--ink-mute); line-height: 1.4; }
+
+.close-slide { text-align: center; }
+.close-slide h2 {
+font-size: clamp(36px, 5.5vw, 72px);
+font-weight: 700;
+line-height: 1.1;
+letter-spacing: -0.025em;
+margin-bottom: 24px;
+}
+.close-slide .sub {
+font-size: clamp(18px, 2.2vw, 26px);
+color: var(--p);
+margin-bottom: 60px;
+font-style: italic;
+}
+.close-card {
+display: inline-block;
+background: rgba(255,255,255,.05);
+backdrop-filter: blur(22px);
+-webkit-backdrop-filter: blur(22px);
+border: 1px solid rgba(255,160,80,.4);
+border-radius: 22px;
+padding: 28px 48px;
+box-shadow: 0 0 60px rgba(255,160,80,.2);
+position: relative;
+overflow: hidden;
+}
+.close-card::before {
+content: '';
+position: absolute;
+inset: 0;
+background: linear-gradient(135deg, rgba(255,255,255,.07) 0%, transparent 60%);
+pointer-events: none;
+}
+.close-card > * { position: relative; z-index: 1; }
+.close-card .name {
+font-size: 12px;
+font-weight: 800;
+letter-spacing: 0.25em;
+color: var(--ink);
+text-transform: uppercase;
+margin-bottom: 4px;
+}
+.close-card .role { font-size: 12px; color: var(--ink-mute); font-style: italic; margin-bottom: 12px; }
+.close-card .url {
+font-size: 16px;
+font-weight: 700;
+color: var(--o);
+letter-spacing: 0.02em;
+}
+.close-card .meta {
+margin-top: 12px;
+font-size: 10px;
+color: var(--ink-mute);
+letter-spacing: 0.15em;
+text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+.brand-mini { top: 18px; left: 20px; font-size: 18px; }
+.side-nav { right: 14px; gap: 10px; }
+section.slide { padding: 60px 20px 40px; }
+}
+@media (max-width: 600px) {
+.ask-amount { font-size: 50px; }
+.ask-amount .currency, .ask-amount .unit { font-size: 26px; }
+.matrix table { font-size: 12px; }
+.matrix th, .matrix td { padding: 10px 6px; }
+.matrix td { font-size: 11px; }
+.scroll-hint { font-size: 9px; }
+}
+</style>
+
+</head>
+<body>
+
+<div class="brand-mini">Scene.</div>
+<nav class="side-nav" id="sideNav"></nav>
+<div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+
+<div class="deck" id="deck">
+
+  <section class="slide hero" data-label="Hero">
+    <div class="orb" style="width:600px;height:600px;background:rgba(175,140,255,.18);top:-200px;left:-150px;animation-delay:-2s"></div>
+    <div class="orb" style="width:500px;height:500px;background:rgba(255,160,80,.15);bottom:-150px;right:-100px;animation-delay:-5s"></div>
+    <div class="orb" style="width:300px;height:300px;background:rgba(255,214,10,.08);top:30%;right:20%;animation-delay:-7s"></div>
+    <div class="dotgrid"></div>
+    <div class="slide-inner">
+      <div class="scene-glow-wrap reveal">
+        <span class="scene-wordmark">Scene.</span>
+      </div>
+      <div class="tagline reveal reveal-d2">
+        <span class="quote">"</span>what's the scene tonight<span class="quote">?"</span>
+      </div>
+      <div class="meta reveal reveal-d4">
+        Investor Briefing &nbsp;·&nbsp; <span>scene.live</span> &nbsp;·&nbsp; April 2026
+      </div>
+    </div>
+    <div class="scroll-hint"><span>scroll</span><span class="arrow"></span></div>
+  </section>
+
+  <section class="slide" data-label="The Question" style="padding-top:80px;padding-bottom:80px">
+    <div class="orb" style="width:500px;height:500px;background:rgba(255,160,80,.15);top:-100px;right:-100px;animation-delay:-3s"></div>
+    <div class="orb" style="width:400px;height:400px;background:rgba(175,140,255,.18);bottom:-100px;left:-100px;animation-delay:-6s"></div>
+    <div class="slide-inner">
+      <div class="chat-grid">
+        <div class="chat-side">
+          <div class="eyebrow reveal">EVERY SATURDAY · 9:47 PM</div>
+          <h2 class="reveal reveal-d1">It always starts with <em>the same question</em>.</h2>
+          <p class="reveal reveal-d2">
+            Six friends. One WhatsApp group. Zero answers. The most common conversation in urban India happens on a phone screen, not at a venue — and right now, no app can answer it.
+          </p>
+          <button class="replay-btn reveal reveal-d3" id="replayChat">↻ Replay</button>
+        </div>
+        <div class="phone reveal-d1 scale-in">
+          <div class="phone-screen">
+            <div class="phone-header">
+              <div class="group-avatar">🌃</div>
+              <div class="group-name">Bangalore Squad</div>
+              <div class="group-meta">6 participants · online</div>
+            </div>
+            <div class="chat-feed" id="chatFeed"></div>
+            <div class="chat-reveal" id="chatReveal">
+              <span class="scene-wordmark">Scene.</span>
+              <div class="reveal-tag">"what's the scene tonight?"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-label="Problem">
+    <div class="orb" style="width:500px;height:500px;background:rgba(255,160,80,.15);top:-150px;left:-100px;animation-delay:-4s"></div>
+    <div class="dotgrid"></div>
+    <div class="slide-inner">
+      <div class="eyebrow reveal">THE BLIND SPOT</div>
+      <h1 class="title reveal reveal-d1">The apps you already use can tell you <em>everything except what matters</em>.</h1>
+      <p class="lede reveal reveal-d2">Static reviews, stale photos, and pre-purchased tickets. None of them answer the only question that actually decides where you go tonight.</p>
+      <div class="problem-rows">
+        <div class="problem-row reveal reveal-d3"><b>Zomato shows you a 4.2 rating.</b><span>But not whether the place is dead at 10 PM.</span></div>
+        <div class="problem-row reveal reveal-d4"><b>Instagram shows you last week's reel.</b><span>But not who's actually there right now.</span></div>
+        <div class="problem-row reveal reveal-d5"><b>BookMyShow sells you a ticket.</b><span>But not the energy of the room.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-label="Market">
+    <div class="orb" style="width:500px;height:500px;background:rgba(175,140,255,.18);top:-150px;right:-100px;animation-delay:-2s"></div>
+    <div class="orb" style="width:400px;height:400px;background:rgba(255,160,80,.12);bottom:-100px;left:10%;animation-delay:-6s"></div>
+    <div class="slide-inner">
+      <div class="eyebrow reveal" style="color:var(--p)">MARKET</div>
+      <h1 class="title reveal reveal-d1">India's going-out economy is <em>exploding</em>.</h1>
+      <p class="lede reveal reveal-d2">The out-of-home category — dining, live events, nightlife — is materially larger than at-home delivery in absolute revenue, and it's growing faster.</p>
+      <div class="stat-grid">
+        <div class="stat-card reveal reveal-d3" style="--accent: var(--o)">
+          <div class="number">₹20,861 Cr</div>
+          <div class="label">India organised live events market (2024)</div>
+          <div class="delta">+15% YoY</div>
+        </div>
+        <div class="stat-card reveal reveal-d4" style="--accent: var(--p)">
+          <div class="number">₹3,225 Cr</div>
+          <div class="label">Zomato 'Going-Out' GOV (12 months pre-Q1FY25)</div>
+          <div class="delta">+171% YoY</div>
+        </div>
+        <div class="stat-card reveal reveal-d5" style="--accent: var(--go)">
+          <div class="number">70%</div>
+          <div class="label">Of urban Indians attended ≥1 ticketed event in 2024</div>
+          <div class="delta">Premium 2×</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-label="Validation">
+    <div class="orb" style="width:500px;height:500px;background:rgba(255,214,10,.1);top:-100px;right:-100px;animation-delay:-3s"></div>
+    <div class="orb" style="width:400px;height:400px;background:rgba(175,140,255,.15);bottom:-100px;left:-100px;animation-delay:-7s"></div>
+    <div class="slide-inner">
+      <div class="eyebrow reveal" style="color: var(--go)">SMART MONEY IS ALREADY HERE</div>
+      <h1 class="title reveal reveal-d1">When India's biggest tech bets converge on a single category, <em>that's the signal</em>.</h1>
+      <div class="validation-grid">
+        <div class="validation-text">
+          <p class="reveal reveal-d2">In August 2024, <strong>Zomato spent ₹2,048 crore</strong> acquiring Paytm Insider — a ~7× revenue multiple. Three months later it relaunched the entire vertical as District. By February 2025 it rebranded the parent company entirely as Eternal, with going-out as one of four core pillars.</p>
+          <p class="reveal reveal-d3">Swiggy followed within weeks, launching its own out-of-home product. Both companies are openly absorbing nine-figure losses to win this category.</p>
+          <p class="reveal reveal-d4" style="color: var(--ink); font-style: italic;">Translation: the smartest operators in Indian consumer tech just told you this is a market worth hundreds of crores. Scene plays in the same arena — without their organizational overhead.</p>
+        </div>
+        <div class="timeline">
+          <div class="tl-item reveal reveal-d3" style="--accent: var(--o)"><div class="tl-date">AUG '24</div><div class="tl-text">Zomato → Paytm Insider for ₹2,048 Cr</div></div>
+          <div class="tl-item reveal reveal-d4" style="--accent: var(--o)"><div class="tl-date">NOV '24</div><div class="tl-text">District launches as standalone going-out app</div></div>
+          <div class="tl-item reveal reveal-d5" style="--accent: var(--p)"><div class="tl-date">DEC '24</div><div class="tl-text">Swiggy launches 'Scenes' in app</div></div>
+          <div class="tl-item reveal reveal-d6" style="--accent: var(--go)"><div class="tl-date">FEB '25</div><div class="tl-text">Zomato → Eternal: 4 listed pillars</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-label="The Gap">
+    <div class="orb" style="width:600px;height:500px;background:rgba(175,140,255,.12);top:-150px;left:50%;animation-delay:-4s"></div>
+    <div class="slide-inner">
+      <div class="eyebrow reveal">THE GAP</div>
+      <h1 class="title reveal reveal-d1">Both incumbents solve the wrong half of the night.</h1>
+      <p class="lede reveal reveal-d2">They built reservation and ticketing rails. The social discovery layer — the answer to "what's the scene tonight?" — is wide open.</p>
+      <div class="matrix reveal reveal-d3">
+        <table>
+          <thead>
+            <tr>
+              <th>Capability</th>
+              <th class="col-zomato">Zomato District</th>
+              <th class="col-swiggy">Swiggy Scenes</th>
+              <th class="col-scene">Scene</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Pre-planned ticket booking</td><td><span class="check">✓</span></td><td><span class="check">✓</span></td><td><span class="check">✓</span></td></tr>
+            <tr><td>Restaurant table reservations</td><td><span class="check">✓</span></td><td><span class="check">✓</span></td><td><span class="cross">×</span></td></tr>
+            <tr><td>Real-time venue energy / vibe</td><td><span class="cross">×</span></td><td><span class="cross">×</span></td><td><span class="check">✓</span></td></tr>
+            <tr><td>GPS auto check-in at venue</td><td><span class="cross">×</span></td><td><span class="cross">×</span></td><td><span class="check">✓</span></td></tr>
+            <tr><td>User-generated drops (photo / video)</td><td><span class="cross">×</span></td><td><span class="cross">×</span></td><td><span class="check">✓</span></td></tr>
+            <tr><td>Live leaderboard of who's hot right now</td><td><span class="cross">×</span></td><td><span class="cross">×</span></td><td><span class="check">✓</span></td></tr>
+            <tr><td>Privacy-safe (auto face blur)</td><td><span class="cross">×</span></td><td><span class="cross">×</span></td><td><span class="check">✓</span></td></tr>
+          </tbody>
+        </table>
+        <div class="matrix-takeaway">Scene isn't competing with District or Scenes — it's the discovery layer they cannot ship from inside a delivery app.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-label="Introducing">
+    <div class="orb" style="width:500px;height:500px;background:rgba(255,160,80,.15);top:-100px;left:-100px;animation-delay:-2s"></div>
+    <div class="orb" style="width:400px;height:400px;background:rgba(175,140,255,.18);bottom:-100px;right:-100px;animation-delay:-5s"></div>
+    <div class="dotgrid"></div>
+    <div class="slide-inner" style="text-align:center">
+      <div class="eyebrow reveal">INTRODUCING</div>
+      <div class="reveal reveal-d1" style="margin: 8px 0 18px;">
+        <span class="scene-wordmark" style="font-size: clamp(60px, 9vw, 110px); line-height: 1;">Scene.</span>
+      </div>
+      <p class="reveal reveal-d2" style="font-size: clamp(18px, 2.2vw, 28px); color: var(--p); margin-bottom: 8px; font-weight: 500; font-style: italic;">BeReal × Citymapper, but for nightlife.</p>
+      <div class="pillars">
+        <div class="pillar reveal reveal-d3" style="--accent: var(--go); --accent-glow: rgba(255,214,10,.2)">
+          <div class="icon">⚡</div>
+          <h3>Real-Time</h3>
+          <p>Anonymous "drops" from real users at venues — photos, short videos, vibe tags. Time-decayed feed. Nothing older than tonight.</p>
+        </div>
+        <div class="pillar reveal reveal-d4" style="--accent: var(--o); --accent-glow: rgba(255,160,80,.25)">
+          <div class="icon">🔥</div>
+          <h3>Ranked</h3>
+          <p>Live venue leaderboard. The city's hottest rooms surface to the top, every night, based on actual drops in the last hour.</p>
+        </div>
+        <div class="pillar reveal reveal-d5" style="--accent: var(--p); --accent-glow: rgba(175,140,255,.25)">
+          <div class="icon">🔒</div>
+          <h3>Safe</h3>
+          <p>Auto face-blur via AWS Rekognition. GPS-verified check-ins. No drop is uploaded without consent and venue context.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-label="Product">
+    <div class="orb" style="width:500px;height:500px;background:rgba(175,140,255,.15);top:-100px;right:-100px;animation-delay:-4s"></div>
+    <div class="slide-inner">
+      <div class="eyebrow reveal">PRODUCT</div>
+      <h1 class="title reveal reveal-d1">From phone-out to feed in <em>under 10 seconds</em>.</h1>
+      <p class="lede reveal reveal-d2">Friction kills UGC. Scene's flow is engineered around a single tap-to-drop loop, with everything else automated.</p>
+      <div class="steps">
+        <div class="step reveal reveal-d3" style="--accent: var(--o)"><div class="step-num">1</div><h4>Walk in</h4><p>GPS auto-detects nearest venue from a curated list of 40 Bengaluru nightspots.</p></div>
+        <div class="step reveal reveal-d4" style="--accent: var(--p)"><div class="step-num">2</div><h4>Drop a vibe</h4><p>One tap. Photo or 6-second video. Pick a vibe tag (loud, packed, chill, dead).</p></div>
+        <div class="step reveal reveal-d5" style="--accent: var(--go)"><div class="step-num">3</div><h4>Auto-blur</h4><p>AWS Rekognition blurs faces server-side before the drop ever goes public.</p></div>
+        <div class="step reveal reveal-d6" style="--accent: var(--o)"><div class="step-num">4</div><h4>Feed + leaderboard</h4><p>Drop powers the live ranking. Every minute, the city is re-sorted by who's actually lit.</p></div>
+      </div>
+      <p class="reveal reveal-d7" style="text-align:center; font-size:11px; color:var(--ink-mute); margin-top: 36px; letter-spacing: 0.15em; text-transform: uppercase;">
+        iOS MVP shipping &nbsp;·&nbsp; 40 Bengaluru venues seeded &nbsp;·&nbsp; demo at scene.live
+      </p>
+    </div>
+  </section>
+
+  <section class="slide" data-label="Why Now">
+    <div class="orb" style="width:500px;height:500px;background:rgba(255,160,80,.15);top:-150px;right:-100px;animation-delay:-2s"></div>
+    <div class="orb" style="width:400px;height:400px;background:rgba(175,140,255,.15);bottom:-100px;left:-100px;animation-delay:-5s"></div>
+    <div class="slide-inner">
+      <div class="eyebrow reveal">WHY NOW</div>
+      <h1 class="title reveal reveal-d1">Four unlocks converging right now.</h1>
+      <div class="quadrants">
+        <div class="quad reveal reveal-d2" style="--accent: var(--o)">
+          <h4>Behavior</h4>
+          <p>Coldplay Ahmedabad (2025) → 86% of attendees travelled from outside the city. Premium experience tickets doubled YoY. Going out is now an identity, not a transaction.</p>
+        </div>
+        <div class="quad reveal reveal-d3" style="--accent: var(--p)">
+          <h4>Capital</h4>
+          <p>Eternal is allocating thousands of crores to going-out and absorbing ₹121 Cr in EBITDA losses to win the category. This is paid-for category validation.</p>
+        </div>
+        <div class="quad reveal reveal-d4" style="--accent: var(--go)">
+          <h4>Tech</h4>
+          <p>Cheap on-device CV (face blur), edge GPS, real-time Postgres (Supabase Realtime), and Mux HLS pipelines now make a UGC vibe app a 1-engineer build, not a 20-person bet.</p>
+        </div>
+        <div class="quad reveal reveal-d5" style="--accent: var(--o)">
+          <h4>Whitespace</h4>
+          <p>Both incumbents are structurally locked into transactional product DNA. A pure social discovery layer cannot ship from inside a delivery app — culturally or organizationally.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-label="Beachhead">
+    <div class="orb" style="width:500px;height:500px;background:rgba(175,140,255,.15);top:-100px;left:30%;animation-delay:-3s"></div>
+    <div class="slide-inner">
+      <div class="eyebrow reveal">GO-TO-MARKET</div>
+      <h1 class="title reveal reveal-d1">Bengaluru is the perfect <em>beachhead</em>.</h1>
+      <div class="beachhead">
+        <div class="bh-list">
+          <div class="bh-row reveal reveal-d2"><h5>DENSITY</h5><p>40 nightspots already mapped in MG Road, Indiranagar, Koramangala — walkable clusters that compound network effects.</p></div>
+          <div class="bh-row reveal reveal-d3"><h5>DEMOGRAPHICS</h5><p>India's youngest median age. Highest disposable income per square km. Largest "going out alone is normal" culture.</p></div>
+          <div class="bh-row reveal reveal-d4"><h5>FOUNDER EDGE</h5><p>Founder lives here. 12 venue partnerships in motion. Product was built TO Bengaluru's grain — not retrofitted into it.</p></div>
+          <div class="bh-row reveal reveal-d5"><h5>SPILLOVER</h5><p>Bengaluru → Mumbai → Delhi → Pune mirrors how every successful India consumer brand has actually scaled.</p></div>
+        </div>
+        <div>
+          <div class="bh-stat reveal reveal-d3 scale-in"><div class="num">40</div><div class="lbl">Bengaluru venues seeded<br>(real, geotagged)</div></div>
+          <div class="bh-stat alt reveal reveal-d4 scale-in"><div class="num">MVP LIVE</div><div class="lbl">on iOS — drops, leaderboard,<br>GPS, face blur</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-label="Monetization">
+    <div class="orb" style="width:500px;height:500px;background:rgba(255,160,80,.15);bottom:-150px;left:-100px;animation-delay:-4s"></div>
+    <div class="slide-inner">
+      <div class="eyebrow reveal">MONETIZATION</div>
+      <h1 class="title reveal reveal-d1">Three rails, sequenced over time.</h1>
+      <p class="lede reveal reveal-d2">Discovery first. Take-rate later. Brand activations once we own the occasion.</p>
+      <div class="phases">
+        <div class="phase reveal reveal-d3" style="--accent: var(--o)">
+          <div class="phase-tag">PHASE 1 · 0–12 MO</div>
+          <h3>Free + Venue Boosts</h3>
+          <ul>
+            <li>Venues pay ₹4,999/mo for verified badge + leaderboard tie-breakers</li>
+            <li>Target: ~120 paying venues in Bengaluru in Year 1</li>
+            <li>Revenue runway: ₹60–70 L</li>
+          </ul>
+        </div>
+        <div class="phase reveal reveal-d4" style="--accent: var(--p)">
+          <div class="phase-tag">PHASE 2 · 12–24 MO</div>
+          <h3>Reservations + Cover</h3>
+          <ul>
+            <li>Take-rate on table holds, cover charge, guestlist drops</li>
+            <li>8–12% commission — same band as Zomato Dine-Out</li>
+            <li>Plug into Razorpay; no payments build needed</li>
+          </ul>
+        </div>
+        <div class="phase reveal reveal-d5" style="--accent: var(--go)">
+          <div class="phase-tag">PHASE 3 · 24+ MO</div>
+          <h3>Brand Activations</h3>
+          <ul>
+            <li>Spirits, FMCG, fashion brands run hyper-local "sponsored vibes"</li>
+            <li>Closest analogue: Snap geofilters for the going-out occasion</li>
+            <li>₹20–50 L per campaign at Bengaluru scale</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide" data-label="The Ask">
+    <div class="orb" style="width:500px;height:500px;background:rgba(255,160,80,.18);top:-100px;left:-100px;animation-delay:-3s"></div>
+    <div class="orb" style="width:500px;height:500px;background:rgba(175,140,255,.15);bottom:-100px;right:-100px;animation-delay:-6s"></div>
+    <div class="slide-inner">
+      <div class="eyebrow reveal">THE ASK</div>
+      <h1 class="title reveal reveal-d1">What we're raising and what it buys.</h1>
+      <div class="ask-grid">
+        <div class="ask-main reveal reveal-d2">
+          <div class="ask-eyebrow">RAISING</div>
+          <div class="ask-amount">
+            <span class="currency">₹</span>
+            <span class="placeholder">[ TBD ]</span>
+            <span class="unit">Cr</span>
+          </div>
+          <div class="ask-meta">SAFE · 18-month runway</div>
+          <span class="ask-tbd-badge">Currently in conversations</span>
+          <p class="desc">
+            Round size and terms under active discussion. We're raising on the strength of a shipped iOS MVP, 40 venues seeded, and a category being actively bid up by Eternal and Swiggy.
+          </p>
+        </div>
+        <div class="ask-uses reveal reveal-d3">
+          <h4>USE OF FUNDS</h4>
+          <div class="use-row"><div class="pct">40%</div><div class="use-text"><h5>Bengaluru launch ops</h5><p>Venue partnerships, street team, founding 200 power-users</p></div></div>
+          <div class="use-row"><div class="pct">30%</div><div class="use-text"><h5>Engineering</h5><p>Android build, recommendations, real-time infra scaling</p></div></div>
+          <div class="use-row"><div class="pct">20%</div><div class="use-text"><h5>Brand & content</h5><p>Launch film, drop-team creators, organic IG/Reels engine</p></div></div>
+          <div class="use-row"><div class="pct">10%</div><div class="use-text"><h5>Reserve</h5><p>Compliance, legal, contingency</p></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide close-slide" data-label="Close">
+    <div class="orb" style="width:500px;height:500px;background:rgba(255,160,80,.18);top:-100px;right:-100px;animation-delay:-2s"></div>
+    <div class="orb" style="width:500px;height:500px;background:rgba(175,140,255,.18);bottom:-100px;left:-100px;animation-delay:-5s"></div>
+    <div class="orb" style="width:300px;height:300px;background:rgba(255,214,10,.08);top:30%;left:30%;animation-delay:-7s"></div>
+    <div class="dotgrid"></div>
+    <div class="slide-inner">
+      <div class="eyebrow reveal">THANK YOU</div>
+      <h2 class="reveal reveal-d1">Every city has a <span class="scene-wordmark" style="font-size: inherit; letter-spacing: -0.025em;">scene</span>.</h2>
+      <p class="sub reveal reveal-d2">We're building the only place to find it — in real time.</p>
+      <div class="close-card reveal reveal-d3 scale-in">
+        <div class="name">SAMYAK</div>
+        <div class="role">Founder, Scene</div>
+        <div class="url">scene.live</div>
+        <div class="meta">Live demo · iOS TestFlight on request</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const slides = document.querySelectorAll('section.slide');
+const sideNav = document.getElementById('sideNav');
+const deck = document.getElementById('deck');
+const progressFill = document.getElementById('progressFill');
+
+slides.forEach((s, i) => {
+  const btn = document.createElement('button');
+  btn.dataset.idx = i;
+  const label = document.createElement('span');
+  label.className = 'label';
+  label.textContent = s.dataset.label || ('Slide ' + (i+1));
+  btn.appendChild(label);
+  btn.addEventListener('click', () => s.scrollIntoView({ behavior: 'smooth' }));
+  sideNav.appendChild(btn);
+});
+const navBtns = sideNav.querySelectorAll('button');
+
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+      const idx = Array.from(slides).indexOf(entry.target);
+      navBtns.forEach((b, i) => b.classList.toggle('active', i === idx));
+      progressFill.style.width = ((idx + 1) / slides.length * 100) + '%';
+      entry.target.querySelectorAll('.reveal, .scale-in').forEach(el => el.classList.add('in'));
+      if (idx === 1) startChatSequence();
+    }
+  });
+}, { threshold: [0.5] });
+slides.forEach(s => io.observe(s));
+
+let currentIdx = 0;
+deck.addEventListener('scroll', () => {
+  currentIdx = Math.round(deck.scrollTop / window.innerHeight);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+    e.preventDefault();
+    if (currentIdx < slides.length - 1) slides[currentIdx + 1].scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+    e.preventDefault();
+    if (currentIdx > 0) slides[currentIdx - 1].scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'Home') {
+    e.preventDefault();
+    slides[0].scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'End') {
+    e.preventDefault();
+    slides[slides.length - 1].scrollIntoView({ behavior: 'smooth' });
+  }
+});
+
+const chatScript = [
+  { side: 'left',  sender: 'Riya',   text: 'guys saturday plans?? 🥱',                  typing: 800,  pause: 600 },
+  { side: 'left',  sender: 'Riya',   text: 'we doing something or what',                 typing: 0,    pause: 700, same: true },
+  { side: 'right', sender: 'You',    text: 'ya lets gooo',                               typing: 600,  pause: 800 },
+  { side: 'left',  sender: 'Arjun',  text: 'mamagoto??',                                 typing: 700,  pause: 700 },
+  { side: 'right', sender: 'You',    text: 'we literally ate there last week 💀',        typing: 800,  pause: 1000 },
+  { side: 'left',  sender: 'Riya',   text: 'social koramangala?',                        typing: 700,  pause: 600 },
+  { side: 'left',  sender: 'Arjun',  text: 'too crowded after 10',                       typing: 700,  pause: 800 },
+  { side: 'right', sender: 'You',    text: 'skyye? toit?',                               typing: 600,  pause: 700 },
+  { side: 'left',  sender: 'Riya',   text: 'idk if its even popping rn',                 typing: 700,  pause: 700 },
+  { side: 'left',  sender: 'Arjun',  text: 'lemme check their insta',                    typing: 700,  pause: 900 },
+  { side: 'left',  sender: 'Arjun',  text: 'last reel is from tuesday 😐',               typing: 1100, pause: 1200, same: true },
+  { side: 'right', sender: 'You',    text: 'why is this so hard every. single. weekend.', typing: 1200, pause: 900 },
+  { side: 'left',  sender: 'Riya',   text: 'WHERE IS THE ACTUAL SCENE TONIGHT 😭',       typing: 1300, pause: 1500 }
+];
+
+const chatFeed = document.getElementById('chatFeed');
+const chatReveal = document.getElementById('chatReveal');
+let chatPlayed = false;
+let chatTimers = [];
+
+function clearChat() {
+  chatTimers.forEach(t => clearTimeout(t));
+  chatTimers = [];
+  chatFeed.innerHTML = '';
+  chatReveal.classList.remove('show');
+}
+
+function startChatSequence(force) {
+  if (chatPlayed && !force) return;
+  chatPlayed = true;
+  clearChat();
+  let cumulative = 200;
+  let lastSender = null;
+  chatScript.forEach((msg, i) => {
+    if (msg.typing > 0) {
+      const t1 = setTimeout(() => {
+        const typing = document.createElement('div');
+        typing.className = 'typing';
+        typing.id = 'typing-' + i;
+        typing.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+        chatFeed.appendChild(typing);
+        chatFeed.scrollTop = chatFeed.scrollHeight;
+      }, cumulative);
+      chatTimers.push(t1);
+      cumulative += msg.typing;
+      const t2 = setTimeout(() => {
+        const typing = document.getElementById('typing-' + i);
+        if (typing) typing.remove();
+      }, cumulative);
+      chatTimers.push(t2);
+    }
+    const t3 = setTimeout(() => {
+      const b = document.createElement('div');
+      b.className = 'bubble ' + msg.side;
+      if (msg.same || lastSender === msg.sender) b.classList.add('same-sender');
+      const senderTag = msg.side === 'left' && !(msg.same || lastSender === msg.sender)
+        ? '<span class="sender">' + msg.sender + '</span>' : '';
+      b.innerHTML = senderTag + msg.text;
+      chatFeed.appendChild(b);
+      chatFeed.scrollTop = chatFeed.scrollHeight;
+      lastSender = msg.sender;
+    }, cumulative);
+    chatTimers.push(t3);
+    cumulative += msg.pause;
+  });
+  const tFinal = setTimeout(() => {
+    chatReveal.classList.add('show');
+  }, cumulative + 400);
+  chatTimers.push(tFinal);
+}
+
+document.getElementById('replayChat').addEventListener('click', () => {
+  startChatSequence(true);
+});
+
+slides.forEach((slide, i) => {
+  slide.addEventListener('click', (e) => {
+    if (e.target.closest('button, a')) return;
+    if (i < slides.length - 1) slides[i + 1].scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    slides[0].querySelectorAll('.reveal, .scale-in').forEach(el => el.classList.add('in'));
+  }, 100);
+});
+</script>
+
+</body>
+</html> 
